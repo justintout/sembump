@@ -18,7 +18,7 @@ const (
 
 var (
 	kind  string
-	kinds = []string{"major", "minor", "patch", "rc", "pre"}
+	kinds = []string{"major", "minor", "patch", "rc"}
 )
 
 func init() {
@@ -60,7 +60,8 @@ func main() {
 		fallthrough
 	case "rc":
 		if len(v.Pre) < 1 {
-			logrus.Fatal("no prerelease tag to bump")
+			v, _ = semver.Make(version + "-rc.1")
+			break
 		}
 		if len(v.Pre) > 2 {
 			logrus.Fatalf(`can't handle prerelease tags not of the form "-tag.number" or "-number"`)

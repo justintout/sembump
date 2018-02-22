@@ -8,6 +8,8 @@ Basically forked from [jessfraz's sumbump](https://github.com/jessfraz/junk/tree
 
 Incrementing major/minor/patch will handle any SemVer-valid scheme. Bumping the pre-release tag will only handle exactly one pre-release version either of the form `-tag.number` or `-number`. 
 
+Bumping a non-prerelease tagged version with the `pre` kind will append `-rc.1` to the version. 
+
 
 ## Installation
 
