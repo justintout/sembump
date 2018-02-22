@@ -7,6 +7,9 @@
     - "1.8.x"
     - "1.9.x"
     - tip
+  install:
+    - go get github.com/golang/lint/golint
+    - go get honnef.co/go/tools/cmd/staticcheck
   script:
     - go build -v
     - go vet $(go list ./... | grep -v vendor)
