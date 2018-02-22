@@ -4,7 +4,8 @@
   notifications:
     email: true
   go:
-    - stable
+    - "1.8.x"
+    - "1.9.x"
     - tip
   script:
     - go build -v
