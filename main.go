@@ -39,14 +39,6 @@ func main() {
 	}
 
 	kind = strings.ToLower(kind)
-	for _, k := range kinds {
-		if k == kind {
-			return
-		}
-	}
-
-	usageAndExit(1, "%s is not a valid kind, please use one of the following [%s]", kind, strings.Join(kinds, " | "))
-
 	version := flag.Arg(0)
 	bumped, err := bump(version, kind)
 	if err != nil {
@@ -115,7 +107,7 @@ func bump(version, kind string) (string, error) {
 		v.Minor = 0
 		v.Patch = 0
 	default:
-		return bumped, fmt.Errorf("kind %s is not valid", kind)
+		return bumped, fmt.Errorf("%s is not valid, please use one of the following [%s]", kind, strings.Join(kinds, " | "))
 	}
 
 	bumped = v.String()
