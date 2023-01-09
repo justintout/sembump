@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"fmt"
 	"os"
@@ -10,23 +11,31 @@ import (
 )
 
 const (
+	myName = "sembump"
+
 	defaultKind = "patch"
 )
 
 var (
+	//go:embed VERSION
+	myVersion string
+
 	kind  string
 	kinds = []string{"major", "minor", "patch"}
 	pre   bool
 )
 
-func init() {
+func main() {
 	flag.StringVar(&kind, "kind", defaultKind, fmt.Sprintf("Kind of version bump [%s]", strings.Join(kinds, " | ")))
 	flag.BoolVar(&pre, "pre", false, "Bump as prerelease version")
-
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "%s %s\n", myName, myVersion)
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	if len(flag.Args()) < 1 {
-		usageAndExit(1, "must pass a version string\nex. %s v0.1.0", os.Args[0])
+		usageAndExit(1, "must pass a semver string, ex: %s", myVersion)
 	}
 
 	kind = strings.ToLower(kind)
@@ -37,9 +46,7 @@ func init() {
 	}
 
 	usageAndExit(1, "%s is not a valid kind, please use one of the following [%s]", kind, strings.Join(kinds, " | "))
-}
 
-func main() {
 	version := flag.Arg(0)
 	bumped, err := bump(version, kind)
 	if err != nil {
@@ -134,6 +141,5 @@ func usageAndExit(exitCode int, message string, args ...interface{}) {
 		fmt.Fprint(os.Stderr, "\n\n")
 	}
 	flag.Usage()
-	fmt.Fprintln(os.Stderr, "")
 	os.Exit(exitCode)
 }
