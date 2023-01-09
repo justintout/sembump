@@ -1,14 +1,11 @@
 package main
 
-//
-
 import (
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/blang/semver"
 )
 
@@ -23,9 +20,7 @@ var (
 )
 
 func init() {
-	// parse flags
 	flag.StringVar(&kind, "kind", defaultKind, fmt.Sprintf("Kind of version bump [%s]", strings.Join(kinds, " | ")))
-	flag.StringVar(&kind, "k", defaultKind, "Kind of version bump (shorthand)")
 	flag.BoolVar(&pre, "pre", false, "Bump as prerelease version")
 
 	flag.Parse()
@@ -46,15 +41,31 @@ func init() {
 
 func main() {
 	version := flag.Arg(0)
+	bumped, err := bump(version, kind)
+	if err != nil {
+		die("failed to bump %s: %v", version, err)
+	}
+	fmt.Fprint(os.Stdout, bumped)
+}
 
-	hasPrefixV := strings.HasPrefix(version, "v")
-	if hasPrefixV {
+func bump(version, kind string) (string, error) {
+	var (
+		hasPrefixLowerV bool
+		hasPrefixUpperV bool
+
+		bumped string
+	)
+
+	if hasPrefixLowerV = strings.HasPrefix(version, "v"); hasPrefixLowerV {
 		version = strings.TrimPrefix(version, "v")
+	}
+	if hasPrefixUpperV = strings.HasPrefix(version, "V"); hasPrefixUpperV {
+		version = strings.TrimPrefix(version, "V")
 	}
 
 	v, err := semver.Make(version)
 	if err != nil {
-		logrus.Fatal(err)
+		return bumped, fmt.Errorf("failed to parse version: %v", err)
 	}
 
 	switch {
@@ -71,7 +82,7 @@ func main() {
 			v.Pre[1].VersionNum++
 			break
 		}
-		logrus.Fatalf(`can't handle prerelease tags not of the form "-tag.number" or "-number"`)
+		return bumped, fmt.Errorf(`can't handle prerelease tags not of the form "-tag.number" or "-number"`)
 	case kind == "patch":
 		if pre {
 			s, _ := semver.NewPRVersion("rc")
@@ -97,16 +108,24 @@ func main() {
 		v.Minor = 0
 		v.Patch = 0
 	default:
-		logrus.Fatalf("kind %s is not valid", kind)
+		return bumped, fmt.Errorf("kind %s is not valid", kind)
 	}
 
-	version = v.String()
+	bumped = v.String()
 
-	if hasPrefixV {
-		version = "v" + version
+	switch {
+	case hasPrefixLowerV:
+		return "v" + bumped, nil
+	case hasPrefixUpperV:
+		return "V" + bumped, nil
+	default:
+		return bumped, nil
 	}
+}
 
-	fmt.Fprintln(os.Stdout, version)
+func die(message string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, message, args...)
+	os.Exit(1)
 }
 
 func usageAndExit(exitCode int, message string, args ...interface{}) {
