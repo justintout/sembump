@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -32,12 +33,36 @@ func main() {
 	}
 	flag.Parse()
 
-	if len(flag.Args()) < 1 {
-		usageAndExit(1, "must pass a semver string, ex: %s", myVersion)
+	var version string
+	if len(flag.Args()) >= 1 { // explicit argument provided
+		arg := flag.Arg(0)
+		if arg == "-" { // force read from stdin
+			data, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				die("failed to read stdin: %v", err)
+			}
+			version = strings.TrimSpace(string(data))
+			if version == "" {
+				usageAndExit(1, "stdin empty while '-' specified; pipe a version, ex: echo %s | %s -kind patch -", myVersion, myName)
+			}
+		} else {
+			version = arg
+		}
+	} else {
+		// No positional argument: attempt to read from stdin only if it's a pipe/file.
+		if fi, err := os.Stdin.Stat(); err == nil && (fi.Mode()&os.ModeCharDevice) == 0 {
+			data, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				die("failed to read stdin: %v", err)
+			}
+			version = strings.TrimSpace(string(data))
+		}
+		if version == "" { // still empty -> error
+			usageAndExit(1, "must provide a semver via arg, '-', or piped on stdin, ex: echo %s | %s -kind patch", myVersion, myName)
+		}
 	}
 
 	kind = strings.ToLower(kind)
-	version := flag.Arg(0)
 	bumped, err := Bump(version, BumpOptions{Kind: Kind(kind), Prerelease: pre})
 	if err != nil {
 		die("failed to bump %s: %v", version, err)
