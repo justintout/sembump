@@ -1,3 +1,0 @@
-# github.com/blang/semver v3.5.1+incompatible
-## explicit
-github.com/blang/semver

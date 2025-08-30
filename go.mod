@@ -1,5 +1,7 @@
 module github.com/justintout/sembump
 
-go 1.18
+go 1.24
 
-require github.com/blang/semver v3.5.1+incompatible
+toolchain go1.24.0
+
+require github.com/blang/semver/v4 v4.0.0

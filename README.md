@@ -1,14 +1,16 @@
 # sembump
 
-[![Travis CI](https://travis-ci.org/justintout/sembump.svg?branch=master)](https://travis-ci.org/justintout/sembump)
+[![CI](https://github.com/justintout/sembump/actions/workflows/ci.yml/badge.svg)](https://github.com/justintout/sembump/actions/workflows/ci.yml)
 
-Easily bump MAJOR/MINOR/PATCH numbers given a specific [SemVer](https://semver.org) version. 
+Easily bump MAJOR/MINOR/PATCH numbers given a specific [SemVer](https://semver.org) version.
 
-Basically forked from [jessfraz's sumbump](https://github.com/jessfraz/junk/tree/master/sembump), with the extended capability of bumping "release candidate" pre-release version numbers (ex: v4.0.1-rc.1, v1.2.3-4). 
+Forked from [jessfraz's sumbump](https://github.com/jessfraz/junk/tree/master/sembump), with the extended capability of bumping "release candidate" pre-release version numbers (ex: v4.0.1-rc.1, v1.2.3-4).
 
 Incrementing major/minor/patch will handle any SemVer-valid scheme. Bumping the pre-release tag will only handle exactly one pre-release version either of the form `-tag.number` or `-number`. 
 
-Bumping a non-prerelease tagged version with the `pre` kind will append `-rc.1` to the version. 
+Bumping a non-prerelease tagged version with the `pre` kind will append `-rc.1` to the version.
+
+Note: The default branch is now `main`.
 
 
 ## Installation
