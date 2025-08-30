@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: "!contains(github.event.head_commit.message, '[skip release]')"
+    runs-on: ubuntu-latest
+    env:
+      BINARY: sembump
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          check-latest: true
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n')
+          if [ -z "$VERSION" ]; then
+            echo "VERSION file empty" >&2; exit 1; fi
+          # Ensure version starts with v
+            case "$VERSION" in
+              v*) : ;;
+              *) VERSION="v$VERSION" ;;
+            esac
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Using version $VERSION"
+
+      - name: Create tag if missing
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.version.outputs.version }}'
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            tag_commit=$(git rev-list -n1 "$VERSION")
+            head_commit=$(git rev-parse HEAD)
+            if [ "$tag_commit" != "$head_commit" ]; then
+              echo "ERROR: Tag $VERSION already exists at $tag_commit (current HEAD is $head_commit)." >&2
+              echo "Refusing to publish release – update VERSION or merge the tagged commit." >&2
+              exit 1
+            fi
+            echo "Tag $VERSION already exists and matches HEAD ($head_commit)."
+          else
+            git tag "$VERSION"
+            git push origin "$VERSION"
+            echo "Created and pushed tag $VERSION"
+          fi
+
+      - name: Build cross-platform binaries
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.version.outputs.version }}'
+          mkdir -p dist
+          targets="darwin/amd64 darwin/arm64 freebsd/386 freebsd/amd64 linux/386 linux/amd64 linux/arm linux/arm64 solaris/amd64 windows/386 windows/amd64"
+          for target in $targets; do
+            GOOS="${target%%/*}"
+            GOARCH="${target##*/}"
+            echo "Building $GOOS/$GOARCH"
+            out="dist/${{ env.BINARY }}-$GOOS-$GOARCH"
+            GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "$out" .
+          done
+          echo "Built binaries:"
+          ls -1 dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          files: dist/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display release URL
+        run: |
+          echo "Release created for ${{ steps.version.outputs.version }}"
